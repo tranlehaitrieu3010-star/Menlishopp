@@ -3,6 +3,9 @@
 <link data-k rel="preconnect" href="https://fonts.googleapis.com">
 <link data-k rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link data-k rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<script data-k src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script data-k src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script data-k src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style data-k>
 /* Layout: sticky header holding the shop name, 4 tabs (Sản phẩm / Cách đặt hàng / Về chúng tôi / Phản hồi) and cart; one tab panel visible at a time; cart + owner editor are right-side drawers. */
 :root {
@@ -351,7 +354,7 @@ body.is-admin{padding-bottom:84px}body.is-admin .toast{bottom:96px}
     <button class="btn primary" id="doLogin" type="button">Đăng nhập</button>
   </div>
 </aside>
-<div data-k class="savebar adm" id="savebar"><span class="msg" id="sbmsg" role="status">Chế độ chỉnh sửa: sửa trực tiếp trên trang rồi bấm “Lưu thay đổi”.</span><button class="btn small primary" id="saveInl" type="button">Lưu thay đổi</button><button class="btn small" id="dlInl" type="button">Tải file</button></div>
+<div data-k class="savebar adm" id="savebar"><span class="msg" id="sbmsg" role="status">Chế độ chỉnh sửa: sửa trực tiếp trên trang rồi bấm “Lưu thay đổi”.</span><button class="btn small primary" id="saveInl" type="button">Lưu thay đổi</button></div>
 <div data-k class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script data-k type="application/json" id="shop-data">{"formUrl":"","fbUrl":"","products":[{"id":"tee","name":"Áo thun oversize lavender","price":189000,"stock":24,"desc":"Form rộng thoải mái, in hình mặt cười ở ngực.","cat":"Áo","sub":"Áo thun","img":""},{"id":"hoodie","name":"Áo hoodie mint","price":349000,"stock":15,"desc":"Hoodie màu xanh mint, có túi trước và dây rút mũ.","cat":"Áo","sub":"Áo khoác","img":""},{"id":"jeans","name":"Quần jeans ống rộng","price":399000,"stock":18,"desc":"Quần jeans xanh nhạt, ống rộng, lưng cao.","cat":"Quần","sub":"Quần jean","img":""},{"id":"skirt","name":"Chân váy xếp ly hồng","price":259000,"stock":12,"desc":"Chân váy xếp ly màu hồng pastel, dễ phối với áo thun.","cat":"Váy","sub":"Chân váy","img":""},{"id":"hat","name":"Mũ bucket vàng bơ","price":129000,"stock":30,"desc":"Mũ bucket màu vàng bơ, vành rộng che nắng.","cat":"Phụ kiện","sub":"Mũ","img":""},{"id":"tote","name":"Túi tote canvas mặt trời","price":99000,"stock":40,"desc":"Túi tote vải canvas màu kem, in hình mặt trời.","cat":"Phụ kiện","sub":"Túi","img":""},{"id":"sunglasses","name":"Kính mát gọng tròn","price":149000,"stock":20,"desc":"Kính gọng tròn, tròng màu tím.","cat":"Phụ kiện","sub":"Kính","img":""},{"id":"sneaker","name":"Sneaker trắng đế hồng","price":549000,"stock":8,"desc":"Giày sneaker trắng, đế hồng, điểm nhấn sọc tím.","cat":"Giày dép","sub":"Sneaker","img":""}],"members":[{"mssv":"123","name":"hehe","role":"","img":""},{"mssv":"456","name":"hihi","role":"","img":""}],"feedbacks":[],"theme":{"bg":"","bgImg":"","lead":"xui","hero":[]},"cats":[{"name":"Áo","subs":["Áo thun","Áo khoác","Áo sơ mi"]},{"name":"Quần","subs":["Quần thun","Quần jean","Quần tây"]},{"name":"Váy","subs":["Chân váy","Đầm"]},{"name":"Phụ kiện","subs":["Mũ","Túi","Kính","Trang sức"]},{"name":"Giày dép","subs":["Sneaker","Sandal"]}],"orders":[],"admins":[]}</script>
@@ -427,15 +430,16 @@ body.is-admin{padding-bottom:84px}body.is-admin .toast{bottom:96px}
     return new Promise(function (ok, no) {
       var u = URL.createObjectURL(f), im = new Image();
       im.onload = function () {
-        var k = Math.min(1, 900 / Math.max(im.width, im.height)), c = document.createElement("canvas"), x;
+        var k = Math.min(1, 520 / Math.max(im.width, im.height)), c = document.createElement("canvas"), x;
         c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
         x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
-        URL.revokeObjectURL(u); c.toBlob(function (b) { b ? ok(b) : no(); }, "image/jpeg", 0.86);
+        URL.revokeObjectURL(u); c.toBlob(function (b) { b ? ok(b) : no(); }, "image/jpeg", 0.66);
       };
       im.onerror = no; im.src = u;
     });
   }
 
+  function toDataUrl(blob) { return new Promise(function (ok, no) { var r = new FileReader(); r.onload = function () { ok(r.result); }; r.onerror = no; r.readAsDataURL(blob); }); }
   var CF = { g: "", s: "" };
   function inCat(p) { return (!CF.g || p.cat === CF.g) && (!CF.s || p.sub === CF.s); }
   function chip(attr, val, label, on) { return '<button type="button" class="chip' + (on ? " on" : "") + '" ' + attr + '="' + esc(val) + '">' + esc(label) + "</button>"; }
@@ -450,50 +454,51 @@ body.is-admin{padding-bottom:84px}body.is-admin .toast{bottom:96px}
   function applyTheme() {
     var t = STATE.theme, d = document.documentElement, b = document.body.style, ld = document.querySelector(".hero .lead");
     if (t.bg) d.style.setProperty("--bg", t.bg);
-    if (t.bgImg) { b.backgroundImage = 'url("/_blob/' + t.bgImg + '")'; b.backgroundSize = "cover"; b.backgroundAttachment = "fixed"; b.backgroundPosition = "center"; }
+    if (t.bgImg) { b.backgroundImage = 'url("' + srcOf(t.bgImg) + '")'; b.backgroundSize = "cover"; b.backgroundAttachment = "fixed"; b.backgroundPosition = "center"; }
     if (t.bg || t.bgImg) d.setAttribute("data-theme", "light");
     if (t.lead && ld) ld.textContent = t.lead;
   }
   function setAdmin(on) { document.body.classList.toggle("is-admin", on); $("#openEdit").hidden = !on; $("#viewAs").textContent = on ? "Xem như khách" : "Quay lại quản trị"; try { renderStatic(); refresh(); } catch (e) { /* bỏ qua */ } }
-  /* ===== Tài khoản admin (SĐT + mật khẩu, mật khẩu lưu dạng băm SHA-256) ===== */
-  var OWNER = { phone: "0347236587", salt: "smml-owner-1", hash: "8809f125f2c90311652b48474ab44c125787d213fad174b950c127d9e74a0a81" };
-  var ADMINS = (Array.isArray(STATE.admins) ? STATE.admins : []).filter(function (a) { return a && a.phone && a.salt && a.hash && a.phone !== OWNER.phone; });
-  ADMINS.unshift(OWNER);
-  var SKEY = "smml-adm-v1";
-  function sha(s) {
-    if (!window.crypto || !crypto.subtle) return Promise.reject(new Error("no_crypto"));
-    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function (b) { return [].map.call(new Uint8Array(b), function (x) { return x.toString(16).padStart(2, "0"); }).join(""); });
-  }
-  function hashPw(salt, phone, pw) { return sha(salt + "|" + phone + "|" + pw); }
+  /* ===== Firebase: đăng nhập admin + lưu dữ liệu shop ===== */
+  var FBCFG = { apiKey: "AIzaSyD39sFjqVVA5qlEjuuPuUYKNfhNvd4KF-4", authDomain: "menlishopp-138a3.firebaseapp.com", projectId: "menlishopp-138a3", storageBucket: "menlishopp-138a3.firebasestorage.app", messagingSenderId: "349266619078", appId: "1:349266619078:web:5d46490f9cb379325785c7" };
+  var OWNER_PHONE = "0347236587", DOMAIN = "@menlishop.com", AUTH = null, DB = null, ADMINS = [];
+  try { if (window.firebase) { firebase.initializeApp(FBCFG); AUTH = firebase.auth(); DB = firebase.firestore(); } } catch (e) { /* bỏ qua */ }
   function normPhone(v) { return String(v || "").replace(/[\s.\-]/g, ""); }
-  function admCountText() { return "Số admin được phép truy cập: " + ADMINS.length; }
-  function updAdmCount() { var a = $("#admCount"); if (a) a.textContent = admCountText() + " · "; var b = $("#admNum"); if (b) b.textContent = ADMINS.length; var l = $("#admList"); if (l) l.innerHTML = admListHtml(); }
-  function maskPhone(p) { return p.slice(0, 3) + "****" + p.slice(-3); }
+  function updAdmCount() { var a = $("#admCount"); if (a) a.textContent = "Số admin được phép truy cập: " + ADMINS.length + " · "; var b = $("#admNum"); if (b) b.textContent = ADMINS.length; var l = $("#admList"); if (l) l.innerHTML = admListHtml(); }
   function admListHtml() {
-    return ADMINS.map(function (a) {
-      return '<div class="rowbox" style="grid-template-columns:1fr auto;align-items:center"><span><b>' + esc(a.phone) + "</b>" + (a.phone === OWNER.phone ? " · chủ shop" : "") + "</span>" +
-        (a.phone === OWNER.phone ? "" : '<button class="link" type="button" data-rmadm="' + esc(a.phone) + '">Thu hồi quyền</button>') + "</div>";
+    return ADMINS.map(function (ph) {
+      return '<div class="rowbox" style="grid-template-columns:1fr auto;align-items:center"><span><b>' + esc(ph) + "</b>" + (ph === OWNER_PHONE ? " · chủ shop" : "") + "</span>" +
+        (ph === OWNER_PHONE ? "" : '<button class="link" type="button" data-rmadm="' + esc(ph) + '">Thu hồi quyền</button>') + "</div>";
     }).join("");
   }
   function admSec() {
-    return '<div class="edsec" id="ed-sec-admins"><h3>Quản lý admin (<span id="admNum">' + ADMINS.length + '</span> người)</h3><p class="hint">Nhập số điện thoại và mật khẩu của người muốn chia sẻ quyền admin. Số lượng admin trên trang sẽ được cập nhật ngay khi bấm “Cấp quyền”.</p>' +
+    return '<div class="edsec" id="ed-sec-admins"><h3>Quản lý admin (<span id="admNum">' + ADMINS.length + '</span> người)</h3><p class="hint">Nhập số điện thoại và mật khẩu của người muốn chia sẻ quyền admin. Quyền có hiệu lực ngay, không cần bấm Lưu.</p>' +
       '<div id="admList" style="display:grid;gap:8px">' + admListHtml() + "</div>" +
       '<div class="two"><div class="f"><label for="ad-phone">Số điện thoại người được cấp</label><input id="ad-phone" type="text" inputmode="tel" autocomplete="off" placeholder="0xxxxxxxxx"></div>' +
       '<div class="f"><label for="ad-pw">Mật khẩu của người đó (tối thiểu 6 ký tự)</label><input id="ad-pw" type="password" autocomplete="new-password"></div></div>' +
       '<div><button class="btn small primary" type="button" id="grantAdmin">Cấp quyền admin</button></div><p class="hint" id="admMsg" role="status"></p></div>';
   }
+  function loadAdmins() {
+    if (!DB) return;
+    DB.collection("admins").get().then(function (snap) { ADMINS = snap.docs.map(function (d) { return d.data().phone || d.id.split("@")[0]; }); updAdmCount(); }).catch(function () { /* bỏ qua */ });
+  }
   function grantAdmin() {
-    var ph = normPhone($("#ad-phone").value), pw = $("#ad-pw").value, m = $("#admMsg");
+    var ph = normPhone($("#ad-phone").value), pw = $("#ad-pw").value, m = $("#admMsg"), existed = false;
+    if (!DB || !AUTH || !AUTH.currentUser) { m.textContent = "Bạn cần đăng nhập admin trước."; return; }
     if (!/^0\d{9}$/.test(ph)) { m.textContent = "Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0."; return; }
     if (pw.length < 6) { m.textContent = "Mật khẩu cần ít nhất 6 ký tự."; return; }
-    if (ADMINS.some(function (a) { return a.phone === ph; })) { m.textContent = "Số này đã là admin."; return; }
-    var salt = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-    hashPw(salt, ph, pw).then(function (h) {
-      ADMINS.push({ phone: ph, salt: salt, hash: h });
-      $("#ad-phone").value = ""; $("#ad-pw").value = "";
-      updAdmCount(); m.textContent = "Đã cấp quyền cho " + ph + ". Đang lưu và đăng…";
-      saveEditor();
-    }).catch(function () { m.textContent = "Trình duyệt không hỗ trợ mã hoá, không thể thêm admin."; });
+    if (ADMINS.indexOf(ph) >= 0) { m.textContent = "Số này đã là admin."; return; }
+    var email = ph + DOMAIN, sec = firebase.apps.filter(function (x) { return x.name === "sec"; })[0] || firebase.initializeApp(FBCFG, "sec");
+    m.textContent = "Đang cấp quyền…";
+    sec.auth().createUserWithEmailAndPassword(email, pw).then(function () { return sec.auth().signOut(); }, function (err) { if (err && err.code === "auth/email-already-in-use") { existed = true; return null; } throw err; })
+      .then(function () { return DB.collection("admins").doc(email).set({ phone: ph }); })
+      .then(function () {
+        ADMINS.push(ph); $("#ad-phone").value = ""; $("#ad-pw").value = ""; updAdmCount();
+        $("#admMsg").textContent = "Đã cấp quyền cho " + ph + (existed ? ". Số này đã có tài khoản nên mật khẩu cũ của họ được giữ nguyên." : ". Họ có thể đăng nhập ngay.");
+      }).catch(function (err) {
+        var c = err && err.code;
+        $("#admMsg").textContent = c === "auth/weak-password" ? "Mật khẩu quá yếu." : c === "permission-denied" ? "Tài khoản của bạn chưa có quyền admin." : "Chưa cấp được quyền, hãy thử lại.";
+      });
   }
   function openLogin() {
     lastFocus = document.activeElement; $("#lgmsg").textContent = ""; $("#lg-pw").value = "";
@@ -501,18 +506,17 @@ body.is-admin{padding-bottom:84px}body.is-admin .toast{bottom:96px}
   }
   function closeLogin() { $("#overlay").hidden = true; $("#login").hidden = true; lockScroll(false); if (lastFocus && lastFocus.focus) lastFocus.focus(); }
   function doLogin() {
-    var ph = normPhone($("#lg-phone").value), pw = $("#lg-pw").value, m = $("#lgmsg");
-    var acc = ADMINS.filter(function (a) { return a.phone === ph; })[0];
-    if (!acc) { m.textContent = "Số điện thoại hoặc mật khẩu không đúng."; return; }
-    hashPw(acc.salt, ph, pw).then(function (h) {
-      if (h !== acc.hash) { m.textContent = "Số điện thoại hoặc mật khẩu không đúng."; return; }
-      try { sessionStorage.setItem(SKEY, ph); } catch (e) { /* bỏ qua */ }
-      ADMIN = true; ADM_ON = true; setAdmin(true); $("#viewAs").hidden = false; updAdmCount();
+    var ph = normPhone($("#lg-phone").value), pw = $("#lg-pw").value, m = $("#lgmsg"), email = ph + DOMAIN;
+    if (!AUTH || !DB) { m.textContent = "Không kết nối được Firebase, hãy kiểm tra mạng."; return; }
+    if (!/^0\d{9}$/.test(ph)) { m.textContent = "Số điện thoại phải gồm 10 chữ số, bắt đầu bằng 0."; return; }
+    m.textContent = "Đang đăng nhập…";
+    AUTH.signInWithEmailAndPassword(email, pw).then(function () { return DB.collection("admins").doc(email).get(); }).then(function (d) {
+      if (!d.exists) { AUTH.signOut(); m.textContent = "Tài khoản này chưa được cấp quyền admin."; return; }
       closeLogin(); toast("Đăng nhập thành công"); openEditor();
-    }).catch(function () { m.textContent = "Không đăng nhập được trên trình duyệt này."; });
+    }).catch(function () { m.textContent = "Số điện thoại hoặc mật khẩu không đúng."; });
   }
   function doLogout() {
-    try { sessionStorage.removeItem(SKEY); } catch (e) { /* bỏ qua */ }
+    if (AUTH) AUTH.signOut();
     if ($("#editor") && !$("#editor").hidden) closeEditor();
     ADMIN = false; ADM_ON = false; setAdmin(false); $("#viewAs").hidden = true; toast("Đã đăng xuất");
   }
@@ -716,7 +720,7 @@ body.is-admin{padding-bottom:84px}body.is-admin .toast{bottom:96px}
     return '<div class="f"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="text" value="' + esc(val) + '" ' + (extra || "") + "></div>";
   }
   function imgBox(img) {
-    return '<div class="imgrow" data-img="' + esc(img || "") + '"><img class="thumb" alt="" ' + (img ? 'src="/_blob/' + esc(img) + '"' : "hidden") + '><label class="btn small" style="cursor:pointer">Chọn ảnh<input type="file" accept="image/*" data-up hidden></label><button class="link" type="button" data-clrimg>Bỏ ảnh</button><span class="hint" data-imsg></span></div>';
+    return '<div class="imgrow" data-img="' + esc(img || "") + '"><img class="thumb" alt="" ' + (img ? 'src="' + srcOf(img) + '"' : "hidden") + '><label class="btn small" style="cursor:pointer">Chọn ảnh<input type="file" accept="image/*" data-up hidden></label><button class="link" type="button" data-clrimg>Bỏ ảnh</button><span class="hint" data-imsg></span></div>';
   }
   function prodRow(p) {
     var n = ++uid;
@@ -824,7 +828,6 @@ body.is-admin{padding-bottom:84px}body.is-admin .toast{bottom:96px}
     next.theme = bc ? { bg: bc.getAttribute("data-set") ? bc.value : "", bgImg: $("#ed-bgimg .imgrow").getAttribute("data-img") || "", lead: th.lead || "", hero: [].map.call(document.querySelectorAll(".heroimg .imgrow"), function (x) { return x.getAttribute("data-img") || ""; }).filter(Boolean) }
       : { bg: th.bg || "", bgImg: th.bgImg || "", lead: th.lead || "", hero: th.hero || [] };
     next.cats = drawer ? curCats() : STATE.cats; next.orders = (drawer ? doneCodes : (STATE.orders || [])).slice(-300);
-    next.admins = ADMINS.filter(function (a) { return a.phone !== OWNER.phone; });
     return next;
   }
 
@@ -840,23 +843,15 @@ body.is-admin{padding-bottom:84px}body.is-admin .toast{bottom:96px}
   var saving = false;
   function saveEditor() {
     if (saving) return;
-    if (!(window.claude && window.claude.use)) { downloadHtml(); return; }
+    if (!DB || !AUTH || !AUTH.currentUser) { setMsg("Bạn cần đăng nhập admin để lưu.", true); return; }
     var next = collect(); if (!next) return;
-    var art = window.claude && window.claude.use ? window.claude.use("artifact") : Promise.resolve(null);
-    saving = true; $("#saveEdit").disabled = true; setMsg("Đang lưu…", false);
-    art.then(function (a) {
-      if (!a) throw { code: "not_granted" };
-      return a.publish(buildDoc(next));
-    }).then(function () {
-      setMsg("Đã lưu. Trang đang tải lại…", false);
+    var size = JSON.stringify(next).length;
+    if (size > 950000) { setMsg("Dữ liệu quá lớn (" + Math.round(size / 1000) + " KB, tối đa khoảng 950 KB). Hãy bớt ảnh hoặc dùng ảnh nhỏ hơn.", true); return; }
+    saving = true; setMsg("Đang lưu…", false);
+    DB.collection("shop").doc("data").set(next).then(function () {
+      saving = false; setMsg("Đã lưu. Khách sẽ thấy ngay khi tải lại trang.", false); toast("Đã lưu lên web");
     }).catch(function (err) {
-      saving = false; $("#saveEdit").disabled = false;
-      var c = err && err.code;
-      if (c === "conflict") setMsg("Có phiên bản mới hơn vừa được đăng, trang sẽ tải lại. Hãy chỉnh sửa lại sau khi tải.", true);
-      else if (c === "not_writer" || c === "not_granted" || c === "not_declared" || c === "consent_required" || c === "capability_disabled" || c === "capability_removed") { setMsg("Chưa đăng lên web được. Bấm “Tải file” để lấy bản đã chỉnh sửa rồi tải lên hosting của bạn.", true); var am = $("#admMsg"); if (am) am.textContent = "Đã thêm tạm trên trang nhưng chưa lưu được (cần quyền Editor trên claude.ai)."; }
-      else if (c === "too_large") setMsg("Nội dung quá lớn, hãy rút gọn bớt rồi lưu lại.", true);
-      else if (c === "rate_limited") setMsg("Bạn lưu quá nhanh, hãy đợi vài giây rồi thử lại.", true);
-      else setMsg("Chưa lưu được. Hãy thử lại sau ít phút.", true);
+      saving = false; setMsg(err && err.code === "permission-denied" ? "Tài khoản này chưa có quyền lưu." : "Chưa lưu được, hãy kiểm tra mạng rồi thử lại.", true);
     });
   }
 
@@ -882,7 +877,7 @@ body.is-admin{padding-bottom:84px}body.is-admin .toast{bottom:96px}
     if (t.closest("#closeLogin")) return closeLogin();
     if (t.closest("#logout")) return doLogout();
     if (t.closest("#grantAdmin")) return grantAdmin();
-    if ((el = t.closest("[data-rmadm]"))) { var rp = el.getAttribute("data-rmadm"); ADMINS = ADMINS.filter(function (a) { return a.phone !== rp; }); updAdmCount(); var am2 = $("#admMsg"); if (am2) am2.textContent = "Đã thu hồi quyền của " + rp + ". Bấm “Lưu và đăng” để áp dụng."; return; }
+    if ((el = t.closest("[data-rmadm]"))) { var rp = el.getAttribute("data-rmadm"); if (rp === OWNER_PHONE || !DB) return; DB.collection("admins").doc(rp + DOMAIN).delete().then(function () { ADMINS = ADMINS.filter(function (a) { return a !== rp; }); updAdmCount(); var am2 = $("#admMsg"); if (am2) am2.textContent = "Đã thu hồi quyền của " + rp + "."; }).catch(function () { var am3 = $("#admMsg"); if (am3) am3.textContent = "Chưa thu hồi được, hãy thử lại."; }); return; }
     if (t.closest("#viewAs")) { ADM_ON = !ADM_ON; setAdmin(ADM_ON); return; }
     if (t.closest("#adminLink")) { e.preventDefault(); if (ADMIN) openEditor(); else openLogin(); return; }
     if (t.closest("#addCat")) { $("#edCats").insertAdjacentHTML("beforeend", catRow({ name: "", subs: [] })); return; }
@@ -927,9 +922,9 @@ body.is-admin{padding-bottom:84px}body.is-admin .toast{bottom:96px}
     if (!inp || !inp.files[0]) return;
     var box = inp.closest(".imgrow"), msg = box.querySelector("[data-imsg]"), f = inp.files[0];
     msg.textContent = "Đang tải ảnh…"; inp.value = "";
-    shrink(f).then(function (blob) { return use("assets").then(function (a) { if (!a) throw 0; return a.upload(blob); }); })
-      .then(function (r) { box.setAttribute("data-img", r.id); var im = box.querySelector("img"); im.src = r.url; im.hidden = false; msg.textContent = "Đã tải ảnh (nhớ bấm Lưu và đăng)"; })
-      .catch(function () { msg.textContent = "Không tải được ảnh. Cần quyền chỉnh sửa hoặc chọn ảnh khác."; });
+    shrink(f).then(function (blob) { return toDataUrl(blob); })
+      .then(function (r) { box.setAttribute("data-img", r); var im = box.querySelector("img"); im.src = r; im.hidden = false; msg.textContent = "Đã tải ảnh (nhớ bấm Lưu thay đổi)"; })
+      .catch(function () { msg.textContent = "Không tải được ảnh, hãy chọn ảnh khác."; });
   });
   document.addEventListener("change", function (e) {
     var t = e.target; if (!t.matches || !t.matches(".pg,.psb")) return;
@@ -987,7 +982,22 @@ body.is-admin{padding-bottom:84px}body.is-admin .toast{bottom:96px}
   if (TABS.indexOf(start) > 0) showTab(start);
 
   updAdmCount();
-  try { var sp = sessionStorage.getItem(SKEY); if (sp && ADMINS.some(function (a) { return a.phone === sp; })) { ADMIN = true; setAdmin(true); $("#viewAs").hidden = false; } } catch (e) { /* bỏ qua */ }
+  if (AUTH) AUTH.onAuthStateChanged(function (u) {
+    if (!u) return;
+    DB.collection("admins").doc(u.email).get().then(function (d) {
+      if (d.exists) { ADMIN = true; ADM_ON = true; setAdmin(true); $("#viewAs").hidden = false; loadAdmins(); } else { AUTH.signOut(); }
+    }).catch(function () { /* bỏ qua */ });
+  });
+  if (DB) DB.collection("shop").doc("data").get().then(function (d) {
+    if (!d.exists) return;
+    var r = d.data();
+    ["formUrl", "fbUrl", "products", "members", "feedbacks", "cats", "theme", "orders"].forEach(function (k) { if (r[k] !== undefined) STATE[k] = r[k]; });
+    STATE.cats = STATE.cats || []; STATE.theme = STATE.theme || {}; STATE.orders = STATE.orders || []; STATE.members = STATE.members || []; STATE.feedbacks = STATE.feedbacks || [];
+    byId = {}; STATE.products.forEach(function (p) { byId[p.id] = p; });
+    FORM_OK = FORM_RE.test(STATE.formUrl); FB_OK = FORM_RE.test(STATE.fbUrl);
+    Object.keys(cart).forEach(function (id) { var p = byId[id]; if (!p || p.stock <= 0) delete cart[id]; else cart[id] = Math.min(cart[id], p.stock); });
+    save(); applyTheme(); renderStatic(); refresh();
+  }).catch(function () { /* dùng dữ liệu có sẵn trong trang */ });
   /* Chỉ chủ shop (hoặc người được cấp quyền sửa) mới thấy nút chỉnh sửa. */
   if (window.claude && window.claude.use) {
     window.claude.use("user").then(function (u) {
